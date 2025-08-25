@@ -181,6 +181,43 @@ module "analytics" {
 }
 ```
 
+### API Gateway Request Analytics
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  
+  context = module.label.context
+  
+  data_sources = [{
+    type = "api_gateway"
+    arn  = aws_api_gateway_rest_api.api.execution_arn
+  }]
+}
+```
+
+**What gets captured:**
+- Request timestamp and metadata
+- HTTP method and resource path
+- Source IP and request ID
+- Request body (when present)
+- **Note**: Response data is not captured with this integration
+
+**Example SQS message:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "method": "POST",
+  "path": "/events",
+  "sourceIp": "192.168.1.1",
+  "requestId": "abc-123-def",
+  "body": {
+    "event": "order_placed",
+    "orderId": "123"
+  }
+}
+```
+
 ## Requirements
 
 - Terraform >= 1.0
