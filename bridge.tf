@@ -10,6 +10,7 @@ module "sqs_bridge_lambda" {
 
   package_type         = "Image"
   image_uri            = local.sqs_bridge_image_uri
+  architecture         = "arm64"
   image_config = {
     command            = local.sqs_bridge_command
   }
