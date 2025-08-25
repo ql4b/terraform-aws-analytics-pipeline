@@ -93,3 +93,24 @@ variable "transform" {
   }
 }
 
+variable "enable_opensearch" {
+  description = "Enable OpenSearch destination"
+  type        = bool
+  default     = false
+}
+
+variable "opensearch_config" {
+  description = "OpenSearch configuration"
+  type = object({
+    domain_endpoint = string
+    domain_arn      = string
+    index_name      = optional(string, "analytics")
+    buffering_size  = optional(number, 5)
+    buffering_interval = optional(number, 60)
+  })
+  default = {
+    domain_endpoint = "-"
+    domain_arn = "-"
+  }
+}
+

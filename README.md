@@ -1,8 +1,8 @@
 # terraform-aws-firehose-analytics
 
-> Complete analytics pipeline from SQS to S3 with optional data transformation
+> Complete analytics pipeline from SQS to S3 and OpenSearch with optional data transformation
 
-Terraform module that creates a complete analytics pipeline: SQS → Lambda Bridge → Kinesis Data Firehose → S3, with optional Lambda data transformation.
+Terraform module that creates a complete analytics pipeline: SQS → Lambda Bridge → Kinesis Data Firehose → S3 + OpenSearch, with optional Lambda data transformation.
 
 ![analytics-pipeline](./doc/analytics-pipeline.jpg)
 
@@ -10,7 +10,7 @@ Terraform module that creates a complete analytics pipeline: SQS → Lambda Brid
 
 - **SQS to Firehose Bridge** - Reliable message processing with batching
 - **Optional Data Transformation** - Lambda-based field mapping and filtering
-- **S3 Storage** - Compressed, partitioned data storage
+- **Dual Destinations** - S3 storage + OpenSearch analytics in single stream
 - **SNS Integration** - Built-in support for SNS message unwrapping
 - **Multi-source Support** - SNS, EventBridge, Lambda integration
 - **Minimal Configuration** - Sensible defaults, easy customization
@@ -78,6 +78,8 @@ aws lambda update-function-code \
   --image-uri $PRIVATE_REPO:latest
 ```
 
+**Note**: The single Firehose stream automatically delivers data to both S3 and OpenSearch when `enable_opensearch = true`.
+
 ## Configuration
 
 ### Transform Templates
@@ -143,13 +145,14 @@ data_sources = [
 
 - `sqs_bridge_ecr.repository_url` - Private ECR repository for the bridge image
 - `sqs_bridge_lambda.function_name` - Lambda function name
-- `firehose_stream_name` - Kinesis Data Firehose stream name
-- `s3_bucket_name` - S3 bucket for analytics data
+- `firehose_stream_name` - Main Kinesis Data Firehose stream name
+- `s3_bucket_name` - S3 bucket for analytics data and failed records
+- `opensearch_stream_name` - OpenSearch delivery stream name (when enabled)
 
 ## Architecture
 
 ```
-Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3
+Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + OpenSearch
                                               ↓
                                         Transform Lambda (optional)
 ```
@@ -159,8 +162,9 @@ Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3
 - **SQS Queue** - Reliable message buffering with DLQ
 - **Lambda Bridge** - Polls SQS and forwards to Firehose
 - **Transform Lambda** - Optional data transformation (Node.js 22)
-- **Kinesis Data Firehose** - Managed delivery to S3
-- **S3 Bucket** - Compressed, partitioned storage
+- **Kinesis Data Firehose** - Managed delivery to dual destinations
+- **S3 Bucket** - Compressed, partitioned storage + failed records backup
+- **OpenSearch** - Real-time analytics and dashboards
 
 ## Examples
 
