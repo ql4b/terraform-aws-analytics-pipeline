@@ -55,3 +55,31 @@ resource "aws_iam_role_policy" "firehose_policy" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "lambda_policy" {
+  name = join("-", [module.this.id, "lambda-policy" ])
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = local.queue_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "firehose:PutRecord",
+          "firehose:PutRecordBatch"
+        ]
+        Resource = aws_kinesis_firehose_delivery_stream.main.arn
+      }
+    ]
+  })
+}
