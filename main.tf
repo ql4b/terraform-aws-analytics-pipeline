@@ -5,7 +5,6 @@ locals {
   queue_config  = var.queue_config
   queue_arn     = var.create_queue ? aws_sqs_queue.main[0].arn : var.existing_queue_arn
   data_sources  = var.data_sources
-
 }
 
 # Firehose delivery stream

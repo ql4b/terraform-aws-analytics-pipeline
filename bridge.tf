@@ -1,8 +1,7 @@
 locals {
     sqs_bridge_image_uri  = var.sqs_bridge_image_uri 
-                          #  "703177223665.dkr.ecr.eu-central-1.amazonaws.com/ql4b-sqs-firehose-bridge-sqs-bridge:latest"
-                          # module.sqs_bridge_ecr.repository_url
     sqs_bridge_command    = var.sqs_bridge_command
+    sqs_batch_size        = var.queue_config.batch_size
 }
 
 
@@ -33,4 +32,10 @@ module "sqs_bridge_lambda" {
   environment_variables = {
     FIREHOSE_STREAM_NAME = aws_kinesis_firehose_delivery_stream.main.name
   }
+}
+
+resource "aws_lambda_event_source_mapping" "sqs_bridge_trigger" {
+  event_source_arn = aws_sqs_queue.main.arn
+  function_name    = module.sqs_bridge_lambda.lambda_function_arn
+  batch_size       = var.queue_config.batch_size
 }
