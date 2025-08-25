@@ -58,7 +58,7 @@ resource "aws_iam_role_policy" "firehose_policy" {
 
 resource "aws_iam_role_policy" "lambda_policy" {
   name = join("-", [module.this.id, "lambda-policy" ])
-  role = aws_iam_role.lambda_role.id
+  role = module.sqs_bridge_lambda.execution_role_arn
 
   policy = jsonencode({
     Version = "2012-10-17"
