@@ -16,3 +16,7 @@ output "dlq_url" {
 output "sqs_bridge" {
   value = module.sqs_bridge_lambda
 }
+
+output "sqs_bridge_ecr" {
+  value = module.sqs_bridge_ecr
+}

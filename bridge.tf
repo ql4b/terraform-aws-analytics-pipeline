@@ -1,5 +1,5 @@
 locals {
-    sqs_bridge_image_uri  = var.sqs_bridge_image_uri 
+    sqs_bridge_image_uri  = "${module.sqs_bridge_ecr.repository_url}:latest" # var.sqs_bridge_image_uri 
     sqs_bridge_command    = var.sqs_bridge_command
     sqs_batch_size        = var.queue_config.batch_size
 }
@@ -10,7 +10,7 @@ module "sqs_bridge_ecr" {
   version              = "0.42.1"
   
   context              = module.this.context
-  attributes           = concat(module.this.attributes, ["sqs", "bridge"])
+  attributes           = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
   
   image_tag_mutability = "MUTABLE"
   force_delete         = true
@@ -19,7 +19,7 @@ module "sqs_bridge_ecr" {
 module "sqs_bridge_lambda" {
   source               = "git@github.com:ql4b/terraform-aws-lambda-function.git"
   context              = module.this.context
-  attributes           = concat(module.this.attributes, ["sqs", "bridge", "lambda"])
+  attributes           = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
   package_type         = "Image"
   image_uri            = local.sqs_bridge_image_uri
