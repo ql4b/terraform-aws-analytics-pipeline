@@ -8,87 +8,23 @@ locals {
   
 }
 
-# SQS Queue (the reliability/buffering layer)
-resource "aws_sqs_queue" "main" {
-  count = local.create_queue ? 1 : 0
-  name                       = join("-", [local.id, "pipeline"])
-  
-  visibility_timeout_seconds = local.queue_config.visibility_timeout_seconds
-  message_retention_seconds  = local.queue_config.message_retention_seconds
-  
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.dlq[0].arn
-    maxReceiveCount     = local.queue_config.max_receive_count
-  })
-  
-  tags = module.this.tags
-}
+# Firehose delivery stream
+resource "aws_kinesis_firehose_delivery_stream" "s3" {
+  name          = join("-", [local.id, "firehose"])
+  destination = "extended_s3"
 
-# Dead Letter Queue
-resource "aws_sqs_queue" "dlq" {
-  count = local.create_queue ? 1 : 0
-  name                       = join("-", [local.id, "pipeline", "dlq"])
-  message_retention_seconds = 1209600  # 14 days
-  
-  tags = module.this.tags
-}
+  extended_s3_configuration {
+    file_extension    = ".json"
+    role_arn   = aws_iam_role.firehose_role.arn
+    bucket_arn = aws_s3_bucket.backup.arn
 
-# Queue policy for data sources
-resource "aws_sqs_queue_policy" "main" {
-  count     = local.create_queue && length(local.data_sources) > 0 ? 1 : 0
-  queue_url = aws_sqs_queue.main[0].id
-  
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = [for source in local.data_sources : 
-            source.type == "sns" ? "sns.amazonaws.com" :
-            source.type == "eventbridge" ? "events.amazonaws.com" :
-            source.type == "api_gateway" ? "apigateway.amazonaws.com" :
-            "lambda.amazonaws.com"
-          ]
-        }
-        Action = "sqs:SendMessage"
-        Resource = aws_sqs_queue.main[0].arn
-        Condition = {
-          ArnEquals = {
-            "aws:SourceArn" = [for source in local.data_sources : source.arn]
-          }
-        }
-      }
-    ]
-  })
-}
-
-# type == "sns" 
-resource "aws_sns_topic_subscription" "sqs" {
-  for_each = {
-    for idx, source in local.data_sources : idx => source
-    if source.type == "sns"
+    compression_format = "GZIP"
+    prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    error_output_prefix = "failed-data/"
   }
-  
-  topic_arn = each.value.arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.main[0].arn
 }
 
-# resource "aws_cloudwatch_event_rule" "sqs" {
-#   for_each = {
-#     for idx, source in local.data_sources : idx => source
-#     if source.type == "eventbridge"
-#   }
-  
-#   event_bus_name = each.value.event_bus_name
-#   # Add event pattern based on source config
-# }
-
-# resource "aws_cloudwatch_event_target" "sqs" {
-#   for_each = aws_cloudwatch_event_rule.sqs
-  
-#   rule      = each.value.name
-#   target_id = "SendToSQS"
-#   arn       = aws_sqs_queue.main[0].arn
-# }
+# S3 bucket for failed records
+resource "aws_s3_bucket" "backup" {
+  bucket = join("-", [local.id, "backup"])
+}
