@@ -29,3 +29,15 @@ variable "data_sources" {
   }))
   default = []
 }
+
+variable "sqs_bridge_image_uri" {
+  description = "URI of the sqs-bridge image"
+  type        = string
+  default     = "public.ecr.aws/ql4b/sqs-firehose-bridge:latest"
+}
+
+variable "sqs_bridge_command" {
+  description = "Command to run sqs-bridge"
+  type        = list(string)
+  default     = ["handler.run"]
+}

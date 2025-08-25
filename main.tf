@@ -5,11 +5,11 @@ locals {
   queue_config  = var.queue_config
   queue_arn     = var.create_queue ? aws_sqs_queue.main[0].arn : var.existing_queue_arn
   data_sources  = var.data_sources
-  
+
 }
 
 # Firehose delivery stream
-resource "aws_kinesis_firehose_delivery_stream" "s3" {
+resource "aws_kinesis_firehose_delivery_stream" "main" {
   name          = join("-", [local.id, "firehose"])
   destination = "extended_s3"
 
