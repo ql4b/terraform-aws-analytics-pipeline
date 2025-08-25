@@ -45,6 +45,13 @@ resource "aws_iam_role_policy" "firehose_policy" {
           "${aws_s3_bucket.backup.arn}/*"
         ]
       },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:PutLogEvents"
+        ],
+        "Resource": "arn:aws:logs:*:*:*"
+      }
     #   {s
     #     Effect = "Allow"
     #     Action = [

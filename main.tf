@@ -20,6 +20,12 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
     compression_format = "GZIP"
     prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
     error_output_prefix = "failed-data/"
+
+    cloudwatch_logging_options {
+      enabled         = true
+      log_group_name  = aws_cloudwatch_log_group.firehose.name
+      log_stream_name = aws_cloudwatch_log_stream.firehose_s3.name
+    }
   }
 }
 
