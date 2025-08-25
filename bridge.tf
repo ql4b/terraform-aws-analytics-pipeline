@@ -35,7 +35,7 @@ module "sqs_bridge_lambda" {
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_bridge_trigger" {
-  event_source_arn = aws_sqs_queue.main.arn
+  event_source_arn = local.queue_arn
   function_name    = module.sqs_bridge_lambda.lambda_function_arn
   batch_size       = var.queue_config.batch_size
 }
