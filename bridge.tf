@@ -27,8 +27,9 @@ module "sqs_bridge_lambda" {
   image_config = {
     command            = local.sqs_bridge_command
   }
-  source_dir = null
-  timeout    = 300
+  source_dir      = null
+  timeout         = 300
+  memory_size     = 1024
 
   environment_variables = {
     FIREHOSE_STREAM_NAME = aws_kinesis_firehose_delivery_stream.main.name
