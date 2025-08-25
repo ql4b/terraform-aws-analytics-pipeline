@@ -1,4 +1,192 @@
 # terraform-aws-firehose-analytics
 
+> Complete analytics pipeline from SQS to S3 with optional data transformation
+
+Terraform module that creates a complete analytics pipeline: SQS → Lambda Bridge → Kinesis Data Firehose → S3, with optional Lambda data transformation.
+
 ![analytics-pipeline](./doc/analytics-pipeline.jpg)
 
+## Features
+
+- **SQS to Firehose Bridge** - Reliable message processing with batching
+- **Optional Data Transformation** - Lambda-based field mapping and filtering
+- **S3 Storage** - Compressed, partitioned data storage
+- **SNS Integration** - Built-in support for SNS message unwrapping
+- **Multi-source Support** - SNS, API Gateway, EventBridge integration
+- **Minimal Configuration** - Sensible defaults, easy customization
+
+## Quick Start
+
+### 1. Deploy Infrastructure
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  
+  context    = module.label.context
+  attributes = ["analytics"]
+  
+  # Data transformation (optional)
+  enable_transform   = true
+  transform_template = "sns-transform.js"  # For SNS messages
+  
+  transform = {
+    fields = ["orderID", "price", "currency"]
+    mappings = {
+      "@timestamp" = "created_at"
+      "booking.id" = "orderID"
+    }
+  }
+  
+  # Data sources
+  data_sources = [{
+    type = "sns"
+    arn  = aws_sns_topic.events.arn
+  }]
+}
+```
+
+### 2. Deploy SQS Bridge Image
+
+After applying the Terraform configuration, you need to push the SQS bridge image to the private ECR repository created by the module:
+
+```bash
+# Get the private ECR repository URL
+PRIVATE_REPO=$(terraform output -json analytics | jq -r .sqs_bridge_ecr.repository_url)
+
+# Login to ECR
+aws ecr get-login-password --region $(aws configure get region) | \
+  docker login --username AWS --password-stdin $PRIVATE_REPO
+
+# Copy public image to your private repository
+docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
+docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest $PRIVATE_REPO:latest
+docker push $PRIVATE_REPO:latest
+```
+
+### 3. Update Lambda Function
+
+After pushing the image, update the Lambda function to use the new image:
+
+```bash
+# Get the Lambda function name
+FUNCTION_NAME=$(terraform output -json analytics | jq -r .sqs_bridge_lambda.function_name)
+
+# Update function code
+aws lambda update-function-code \
+  --function-name $FUNCTION_NAME \
+  --image-uri $PRIVATE_REPO:latest
+```
+
+## Configuration
+
+### Transform Templates
+
+- **`transform.js`** - Basic field mapping and filtering
+- **`sns-transform.js`** - SNS message unwrapping with MessageAttributes extraction
+
+### Transform Configuration
+
+```hcl
+transform = {
+  # Fields to include (empty = all fields)
+  fields = ["field1", "field2"]
+  
+  # Field mappings (target = source)
+  mappings = {
+    "@timestamp"    = "created_at"
+    "booking.id"    = "orderID"
+    "user.email"    = "email"
+  }
+}
+```
+
+### Data Sources
+
+```hcl
+data_sources = [
+  {
+    type = "sns"
+    arn  = aws_sns_topic.events.arn
+  },
+  {
+    type = "api_gateway"
+    arn  = aws_api_gateway_rest_api.api.execution_arn
+  }
+]
+```
+
+## Outputs
+
+- `sqs_bridge_ecr.repository_url` - Private ECR repository for the bridge image
+- `sqs_bridge_lambda.function_name` - Lambda function name
+- `firehose_stream_name` - Kinesis Data Firehose stream name
+- `s3_bucket_name` - S3 bucket for analytics data
+
+## Architecture
+
+```
+Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3
+                                              ↓
+                                        Transform Lambda (optional)
+```
+
+### Components
+
+- **SQS Queue** - Reliable message buffering with DLQ
+- **Lambda Bridge** - Polls SQS and forwards to Firehose
+- **Transform Lambda** - Optional data transformation (Node.js 22)
+- **Kinesis Data Firehose** - Managed delivery to S3
+- **S3 Bucket** - Compressed, partitioned storage
+
+## Examples
+
+### Basic Analytics Pipeline
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  
+  context = module.label.context
+  
+  data_sources = [{
+    type = "sns"
+    arn  = aws_sns_topic.events.arn
+  }]
+}
+```
+
+### SNS Message Processing
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  
+  context = module.label.context
+  
+  enable_transform   = true
+  transform_template = "sns-transform.js"
+  
+  transform = {
+    fields = []  # Include all fields
+    mappings = {
+      "@timestamp" = "created_at"
+    }
+  }
+  
+  data_sources = [{
+    type = "sns"
+    arn  = aws_sns_topic.booking_events.arn
+  }]
+}
+```
+
+## Requirements
+
+- Terraform >= 1.0
+- AWS provider >= 5.0
+- Docker (for image deployment)
+
+## License
+
+MIT
