@@ -24,10 +24,16 @@ exports.handler = async (event) => {
                 timestamp: snsMessage.Timestamp,
                 ...attributes,
                 
-                // Apply field mappings to message content
+                // Include data based on fields and mappings configuration
+                %{ if length(fields) == 0 && length(mappings) == 0 ~}
+                // No fields or mappings specified - include all data
+                ...data,
+                %{ else ~}
+                // Include specified fields only
                 %{ for field in fields ~}
                 ...(data['${field}'] !== undefined && { '${field}': data['${field}'] }),
                 %{ endfor ~}
+                %{ endif ~}
                 
                 %{ for target, source in mappings ~}
                 ...(data['${source}'] !== undefined && { '${target}': data['${source}'] }),

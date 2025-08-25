@@ -24,7 +24,7 @@ variable "queue_config" {
 variable "data_sources" {
   description = "Data sources that will send to this pipeline"
   type = list(object({
-    type = string  # "sns", "api_gateway", "eventbridge", "lambda"
+    type = string  # "sns", "eventbridge", "lambda"
     arn  = string
   }))
   default = []
@@ -92,3 +92,4 @@ variable "transform" {
     mappings = {}
   }
 }
+

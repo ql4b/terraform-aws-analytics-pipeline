@@ -12,7 +12,7 @@ Terraform module that creates a complete analytics pipeline: SQS → Lambda Brid
 - **Optional Data Transformation** - Lambda-based field mapping and filtering
 - **S3 Storage** - Compressed, partitioned data storage
 - **SNS Integration** - Built-in support for SNS message unwrapping
-- **Multi-source Support** - SNS, API Gateway, EventBridge integration
+- **Multi-source Support** - SNS, EventBridge, Lambda integration
 - **Minimal Configuration** - Sensible defaults, easy customization
 
 ## Quick Start
@@ -52,7 +52,7 @@ After applying the Terraform configuration, you need to push the SQS bridge imag
 
 ```bash
 # Get the private ECR repository URL
-PRIVATE_REPO=$(terraform output -json analytics | jq -r .sqs_bridge_ecr.repository_url)
+PRIVATE_REPO=$(tf output -json analytics | jq -r .sqs_bridge_ecr.repository_url)
 
 # Login to ECR
 aws ecr get-login-password --region $(aws configure get region) | \
@@ -101,6 +101,33 @@ transform = {
 }
 ```
 
+#### SNS Transform Field Behavior
+
+The `sns-transform.js` template handles field inclusion based on your configuration:
+
+- **Case 1:** `fields = []` and `mappings = {}` → Include all original data
+- **Case 2:** `fields = ["field1"]` and `mappings = {}` → Include only specified fields  
+- **Case 3:** `fields = []` and `mappings = {"new": "old"}` → Include only mapped fields (no duplicates)
+- **Case 4:** `fields = ["field1"]` and `mappings = {"new": "old"}` → Include specified fields + mapped fields
+
+**Example:**
+```hcl
+# Case 3: Only mapped fields
+transform = {
+  fields = []
+  mappings = {
+    "order_id" = "orderId"
+    "user_email" = "email"
+  }
+}
+```
+
+**Input:** `{"orderId": "123", "email": "user@example.com", "amount": 99.99}`
+
+**Output:** `{"messageId": "...", "timestamp": "...", "order_id": "123", "user_email": "user@example.com"}`
+
+*Note: `amount` is excluded because it's not in fields or mappings.*
+
 ### Data Sources
 
 ```hcl
@@ -108,10 +135,6 @@ data_sources = [
   {
     type = "sns"
     arn  = aws_sns_topic.events.arn
-  },
-  {
-    type = "api_gateway"
-    arn  = aws_api_gateway_rest_api.api.execution_arn
   }
 ]
 ```
@@ -180,28 +203,6 @@ module "analytics" {
   }]
 }
 ```
-
-### API Gateway Request Analytics
-
-```hcl
-module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
-  
-  context = module.label.context
-  
-  data_sources = [{
-    type = "api_gateway"
-    arn  = aws_api_gateway_rest_api.api.execution_arn
-  }]
-}
-```
-
-**What gets captured:**
-- Request timestamp and metadata
-- HTTP method and resource path
-- Source IP and request ID
-- Request body (when present)
-- **Note**: Response data is not captured with this integration
 
 **Example SQS message:**
 ```json

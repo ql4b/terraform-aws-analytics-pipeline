@@ -69,26 +69,5 @@ resource "aws_sns_topic_subscription" "sqs" {
   endpoint  = aws_sqs_queue.main[0].arn
 }
 
-# For data source with type == "api_gateway" create SQS integration
-resource "aws_api_gateway_integration" "sqs" {
-  for_each = {
-    for idx, source in local.data_sources : idx => source
-    if source.type == "api_gateway"
-  }
-  
-  rest_api_id = split("/", each.value.arn)[1]
-  resource_id = "*"
-  http_method = "POST"
-  
-  type                    = "AWS"
-  integration_http_method = "POST"
-  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.main[0].name}"
-  
-  request_parameters = {
-    "integration.request.header.Content-Type" = "'application/x-amz-json-1.0'"
-  }
-  
-  request_templates = {
-    "application/json" = "Action=SendMessage&MessageBody={\"timestamp\":\"$context.requestTime\",\"method\":\"$context.httpMethod\",\"path\":\"$context.resourcePath\",\"sourceIp\":\"$context.identity.sourceIp\",\"requestId\":\"$context.requestId\",\"body\":$input.body}"
-  }
-}
+# API Gateway analytics should be handled at the application level
+# (Lambda function sends to SNS/SQS directly)

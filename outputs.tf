@@ -20,3 +20,4 @@ output "sqs_bridge" {
 output "sqs_bridge_ecr" {
   value = module.sqs_bridge_ecr
 }
+

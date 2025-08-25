@@ -34,6 +34,8 @@ module "sqs_bridge_lambda" {
   environment_variables = {
     FIREHOSE_STREAM_NAME = aws_kinesis_firehose_delivery_stream.main.name
   }
+
+  depends_on = [  module.sqs_bridge_ecr ]
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_bridge_trigger" {
