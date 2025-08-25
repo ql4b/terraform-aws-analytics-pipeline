@@ -1,6 +1,19 @@
 locals {
-    sqs_bridge_image_uri  = var.sqs_bridge_image_uri
-    sqs_bridge_command    = var.sqs_bridge_command  
+    sqs_bridge_image_uri  = "703177223665.dkr.ecr.us-east-1.amazonaws.com/ql4b-sqs-firehose-bridge-sqs-bridge:latest" 
+                          # module.sqs_bridge_ecr.repository_url
+    sqs_bridge_command    = var.sqs_bridge_command
+}
+
+
+module "sqs_bridge_ecr" {
+  source               = "cloudposse/ecr/aws"
+  version              = "0.42.1"
+  
+  context              = module.this.context
+  attributes           = concat(module.this.attributes, ["sqs", "bridge"])
+  
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
 
 module "sqs_bridge_lambda" {
