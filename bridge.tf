@@ -28,6 +28,7 @@ module "sqs_bridge_lambda" {
     command            = local.sqs_bridge_command
   }
   source_dir = null
+  timeout    = 300
 
   environment_variables = {
     FIREHOSE_STREAM_NAME = aws_kinesis_firehose_delivery_stream.main.name
