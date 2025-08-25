@@ -6,7 +6,7 @@ locals {
 module "sqs_bridge_lambda" {
   source               = "git@github.com:ql4b/terraform-aws-lambda-function.git"
   context              = module.this.context
-  attributes           = concat(module.label.attributes, ["sqs", "bridge", "lambda"])
+  attributes           = concat(module.this.attributes, ["sqs", "bridge", "lambda"])
 
   package_type         = "Image"
   image_uri            = local.sqs_bridge_image_uri
