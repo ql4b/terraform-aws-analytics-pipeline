@@ -11,7 +11,7 @@ locals {
 # SQS Queue (the reliability/buffering layer)
 resource "aws_sqs_queue" "main" {
   count = local.create_queue ? 1 : 0
-  name                       = join("-", local.id, "pipeline")
+  name                       = join("-", [local.id, "pipeline"])
   
   visibility_timeout_seconds = local.queue_config.visibility_timeout_seconds
   message_retention_seconds  = local.queue_config.message_retention_seconds
@@ -27,7 +27,7 @@ resource "aws_sqs_queue" "main" {
 # Dead Letter Queue
 resource "aws_sqs_queue" "dlq" {
   count = local.create_queue ? 1 : 0
-  name                       = join("-", local.id, "pipeline", "dlq")
+  name                       = join("-", [local.id, "pipeline", "dlq"])
   message_retention_seconds = 1209600  # 14 days
   
   tags = module.this.tags
