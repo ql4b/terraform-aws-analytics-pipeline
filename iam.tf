@@ -15,51 +15,46 @@ resource "aws_iam_role" "firehose_role" {
   })
 }
 
+locals {
+  firehose_statements = concat([
+    {
+      Effect = "Allow"
+      Action = [
+        "s3:AbortMultipartUpload",
+        "s3:GetBucketLocation",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:ListBucketMultipartUploads",
+        "s3:PutObject"
+      ]
+      Resource = [
+        aws_s3_bucket.backup.arn,
+        "${aws_s3_bucket.backup.arn}/*"
+      ]
+    },
+    {
+      Effect = "Allow"
+      Action = [
+        "logs:PutLogEvents"
+      ]
+      Resource = "arn:aws:logs:*:*:*"
+    }
+  ], var.enable_transform ? [{
+    Effect = "Allow"
+    Action = [
+      "lambda:InvokeFunction"
+    ]
+    Resource = module.transform[0].function_arn
+  }] : [])
+}
+
 resource "aws_iam_role_policy" "firehose_policy" {
   name = join("-", [module.this.id, "firehose-policy" ])
   role = aws_iam_role.firehose_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-    #   {
-    #     Effect = "Allow"
-    #     Action = [
-    #       "es:ESHttpPost",
-    #       "es:ESHttpPut"
-    #     ]
-    #     Resource = "${var.opensearch_domain_arn}/*"
-    #   },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:AbortMultipartUpload",
-          "s3:GetBucketLocation",
-          "s3:GetObject",
-          "s3:ListBucket",
-          "s3:ListBucketMultipartUploads",
-          "s3:PutObject"
-        ]
-        Resource = [
-          aws_s3_bucket.backup.arn,
-          "${aws_s3_bucket.backup.arn}/*"
-        ]
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "logs:PutLogEvents"
-        ],
-        "Resource": "arn:aws:logs:*:*:*"
-      }
-    #   {s
-    #     Effect = "Allow"
-    #     Action = [
-    #       "lambda:InvokeFunction"
-    #     ]
-    #     Resource = aws_lambda_function.transform.arn
-    #   }
-    ]
+    Statement = local.firehose_statements
   })
 }
 

@@ -41,3 +41,54 @@ variable "sqs_bridge_command" {
   type        = list(string)
   default     = ["handler.run"]
 }
+
+variable "enable_transform" {
+  description = "Enable Lambda data transformation"
+  type        = bool
+  default     = false
+}
+
+variable "transform_template" {
+  description = "Transform template to use (transform.js or sns-transform.js)"
+  type        = string
+  default     = "transform.js"
+}
+
+variable "transform" {
+  description = "Data transformation configuration"
+  type = object({
+    # Basic field operations
+    fields   = optional(list(string), [])
+    mappings = optional(map(string), {})
+    
+    # Advanced transformations (EventBridge-style)
+    input_paths = optional(map(string), {})  # Extract nested values
+    input_template = optional(string, null)   # JSON template with placeholders
+    
+    # Custom JavaScript functions
+    custom_functions = optional(list(object({
+      name = string
+      code = string
+    })), [])
+    
+    # Conditional logic
+    conditions = optional(list(object({
+      field     = string
+      operator  = string  # eq, ne, gt, lt, contains, exists
+      value     = string
+      then_map  = map(string)
+      else_map  = optional(map(string), {})
+    })), [])
+    
+    # Data enrichment
+    enrich = optional(object({
+      add_fields = optional(map(string), {})
+      remove_fields = optional(list(string), [])
+      parse_json_fields = optional(list(string), [])
+    }), {})
+  })
+  default = {
+    fields   = []
+    mappings = {}
+  }
+}

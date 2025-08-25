@@ -5,6 +5,10 @@ locals {
   queue_config  = var.queue_config
   queue_arn     = var.create_queue ? aws_sqs_queue.main[0].arn : var.existing_queue_arn
   data_sources  = var.data_sources
+
+  transform = var.transform
+  enable_transform = var.enable_transform
+  transform_template = var.transform_template
 }
 
 # Firehose delivery stream
@@ -20,6 +24,20 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
     compression_format = "GZIP"
     prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
     error_output_prefix = "failed-data/"
+
+    dynamic "processing_configuration" {
+      for_each = local.enable_transform ? [1] : []
+      content {
+        enabled = true
+        processors {
+          type = "Lambda"
+          parameters {
+            parameter_name  = "LambdaArn"
+            parameter_value = module.transform[0].function_arn
+          }
+        }
+      }
+    }
 
     cloudwatch_logging_options {
       enabled         = true
