@@ -62,3 +62,33 @@ resource "aws_sqs_queue_policy" "main" {
     ]
   })
 }
+
+# type == "sns" 
+resource "aws_sns_topic_subscription" "sqs" {
+  for_each = {
+    for idx, source in local.data_sources : idx => source
+    if source.type == "sns"
+  }
+  
+  topic_arn = each.value.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.main[0].arn
+}
+
+# resource "aws_cloudwatch_event_rule" "sqs" {
+#   for_each = {
+#     for idx, source in local.data_sources : idx => source
+#     if source.type == "eventbridge"
+#   }
+  
+#   event_bus_name = each.value.event_bus_name
+#   # Add event pattern based on source config
+# }
+
+# resource "aws_cloudwatch_event_target" "sqs" {
+#   for_each = aws_cloudwatch_event_rule.sqs
+  
+#   rule      = each.value.name
+#   target_id = "SendToSQS"
+#   arn       = aws_sqs_queue.main[0].arn
+# }
