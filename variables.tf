@@ -31,9 +31,9 @@ variable "data_sources" {
 }
 
 variable "sqs_bridge_image_uri" {
-  description = "URI of the sqs-bridge image"
+  description = "URI of the sqs-bridge image (must be private ECR in same account)"
   type        = string
-  default     = "public.ecr.aws/ql4b/sqs-firehose-bridge:latest"
+  default     = null
 }
 
 variable "sqs_bridge_command" {

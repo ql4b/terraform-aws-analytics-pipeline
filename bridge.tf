@@ -1,5 +1,6 @@
 locals {
-    sqs_bridge_image_uri  = "703177223665.dkr.ecr.us-east-1.amazonaws.com/ql4b-sqs-firehose-bridge-sqs-bridge:latest" 
+    sqs_bridge_image_uri  = var.sqs_bridge_image_uri 
+                          #  "703177223665.dkr.ecr.eu-central-1.amazonaws.com/ql4b-sqs-firehose-bridge-sqs-bridge:latest"
                           # module.sqs_bridge_ecr.repository_url
     sqs_bridge_command    = var.sqs_bridge_command
 }
