@@ -25,3 +25,23 @@ output "sqs_bridge_log_group" {
   value = data.aws_lambda_function.sqs_bridge_lambda.logging_config[0].log_group
 }
 
+output "firehose_stream_name" {
+  description = "Name of the Kinesis Data Firehose stream"
+  value       = aws_kinesis_firehose_delivery_stream.main.name
+}
+
+output "s3_bucket_name" {
+  description = "Name of the S3 backup bucket"
+  value       = aws_s3_bucket.backup.bucket
+}
+
+output "firehose_role_arn" {
+  description = "ARN of the Firehose IAM role for S3"
+  value       = aws_iam_role.firehose_role.arn
+}
+
+output "firehose_opensearch_role_arn" {
+  description = "ARN of the Firehose IAM role for OpenSearch"
+  value       = var.enable_opensearch ? aws_iam_role.firehose_opensearch[0].arn : null
+}
+
