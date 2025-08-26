@@ -102,10 +102,11 @@ variable "enable_opensearch" {
 variable "opensearch_config" {
   description = "OpenSearch configuration"
   type = object({
-    domain_arn      = string
-    index_name      = optional(string, "analytics")
-    buffering_size  = optional(number, 5)
-    buffering_interval = optional(number, 60)
+    domain_arn            = string
+    index_name            = optional(string, "analytics")
+    index_rotation_period = optional(string, "OneMonth") 
+    buffering_size        = optional(number, 5)
+    buffering_interval    = optional(number, 60)
   })
   default = {
     domain_arn = "-"

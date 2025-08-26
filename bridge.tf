@@ -44,6 +44,6 @@ resource "aws_lambda_event_source_mapping" "sqs_bridge_trigger" {
   batch_size       = var.queue_config.batch_size
 }
 
-data "aws_lambda_function" "sqs_bridge_lambda" {
-  function_name = module.sqs_bridge_lambda.function_name
-}
+# data "aws_lambda_function" "sqs_bridge_lambda" {
+#   function_name = module.sqs_bridge_lambda.function_name
+# }
