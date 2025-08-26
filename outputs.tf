@@ -21,3 +21,7 @@ output "sqs_bridge_ecr" {
   value = module.sqs_bridge_ecr
 }
 
+output "sqs_bridge_log_group" {
+  value = data.aws_lambda_function.sqs_bridge_lambda.logging_config[0].log_group
+}
+

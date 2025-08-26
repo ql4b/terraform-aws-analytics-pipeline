@@ -60,8 +60,8 @@ aws ecr get-login-password --region $(aws configure get region) | \
 
 # Copy public image to your private repository
 docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
-docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest $PRIVATE_REPO:latest
-docker push $PRIVATE_REPO:latest
+docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest "${PRIVATE_REPO}:latest"
+docker push "${PRIVATE_REPO}:latest"
 ```
 
 ### 3. Update Lambda Function

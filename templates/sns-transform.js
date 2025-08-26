@@ -22,6 +22,8 @@ exports.handler = async (event) => {
                 // Add SNS metadata
                 messageId: snsMessage.MessageId,
                 timestamp: snsMessage.Timestamp,
+                topicArn: snsMessage.TopicArn,
+                topic: snsMessage.TopicArn.split(':').pop(),
                 ...attributes,
                 
                 // Include data based on fields and mappings configuration

@@ -1,3 +1,8 @@
+variable "name" {
+  description = "Name prefix for all resources"
+  type        = string
+}
+
 variable "create_queue" {
   description = "Whether to create SQS queue (true) or use existing (false)"
   type        = bool
@@ -15,43 +20,15 @@ variable "queue_config" {
   type = object({
     visibility_timeout_seconds = optional(number, 300)
     message_retention_seconds  = optional(number, 1209600)  # 14 days
-    max_receive_count          = optional(number, 3)
-    batch_size                 = optional(number, 10)
+    max_receive_count         = optional(number, 3)
+    batch_size               = optional(number, 10)
   })
   default = {}
 }
 
-variable "data_sources" {
-  description = "Data sources that will send to this pipeline"
-  type = list(object({
-    type = string  # "sns", "eventbridge", "lambda"
-    arn  = string
-  }))
-  default = []
-}
-
-variable "sqs_bridge_image_uri" {
-  description = "URI of the sqs-bridge image (must be private ECR in same account)"
+variable "opensearch_domain_arn" {
+  description = "ARN of the OpenSearch domain"
   type        = string
-  default     = null
-}
-
-variable "sqs_bridge_command" {
-  description = "Command to run sqs-bridge"
-  type        = list(string)
-  default     = ["handler.run"]
-}
-
-variable "enable_transform" {
-  description = "Enable Lambda data transformation"
-  type        = bool
-  default     = false
-}
-
-variable "transform_template" {
-  description = "Transform template to use (transform.js or sns-transform.js)"
-  type        = string
-  default     = "transform.js"
 }
 
 variable "transform" {
@@ -93,22 +70,42 @@ variable "transform" {
   }
 }
 
-variable "enable_opensearch" {
-  description = "Enable OpenSearch destination"
-  type        = bool
-  default     = false
+variable "opensearch" {
+  description = "OpenSearch index configuration"
+  type = object({
+    index_name = string
+  })
 }
 
-variable "opensearch_config" {
-  description = "OpenSearch configuration"
+variable "buffering" {
+  description = "Firehose buffering configuration"
   type = object({
-    domain_arn      = string
-    index_name      = optional(string, "analytics")
-    buffering_size  = optional(number, 5)
-    buffering_interval = optional(number, 60)
+    interval_seconds = number
+    size_mb         = number
   })
   default = {
-    domain_arn = "-"
+    interval_seconds = 60
+    size_mb         = 5
   }
 }
 
+variable "data_sources" {
+  description = "Data sources that will send to this pipeline"
+  type = list(object({
+    type = string  # "sns", "api_gateway", "eventbridge", "lambda"
+    arn  = string
+  }))
+  default = []
+}
+
+variable "tags" {
+  description = "Tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "transform_template" {
+  description = "Custom transform template file path (overrides built-in template)"
+  type        = string
+  default     = null
+}
