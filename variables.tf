@@ -113,3 +113,8 @@ variable "opensearch_config" {
   }
 }
 
+variable "sqs_bridge_public_image" {
+  type    = string
+  default = "public.ecr.aws/ql4b/sqs-firehose-bridge:latest" 
+}
+
