@@ -1,4 +1,4 @@
-# terraform-aws-firehose-analytics
+# terraform-aws-analytics-pipeline
 
 > Complete analytics pipeline from SQS to S3 and OpenSearch with optional data transformation
 
@@ -6,13 +6,22 @@ Terraform module that creates a complete analytics pipeline: SQS → Lambda Brid
 
 ![analytics-pipeline](./doc/analytics-pipeline.jpg)
 
+
+## Architecture
+
+```
+Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + OpenSearch
+                                              ↓
+                                        Transform Lambda (optional)
+```
+
 ## Features
 
 - **SQS to Firehose Bridge** - Reliable message processing with batching
 - **Optional Data Transformation** - Lambda-based field mapping and filtering
 - **Dual Destinations** - S3 storage + OpenSearch analytics in single stream
 - **SNS Integration** - Built-in support for SNS message unwrapping
-- **Multi-source Support** - SNS, EventBridge, Lambda integration
+- **Multi-source Support** - SNS (only SNS for now but will add more)
 - **Minimal Configuration** - Sensible defaults, easy customization
 
 ## Quick Start
@@ -21,7 +30,7 @@ Terraform module that creates a complete analytics pipeline: SQS → Lambda Brid
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
   
   context    = module.label.context
   attributes = ["analytics"]
@@ -48,37 +57,52 @@ module "analytics" {
 
 ### 2. Deploy SQS Bridge Image
 
-After applying the Terraform configuration, you need to push the SQS bridge image to the private ECR repository created by the module:
+The module automatically creates a private ECR repository for the SQS bridge image. On first `terraform apply`, it will fail with helpful instructions:
 
 ```bash
-# Get the private ECR repository URL
-PRIVATE_REPO=$(tf output -json analytics | jq -r .sqs_bridge_ecr.repository_url)
+# First apply creates ECR repository and fails with instructions
+terraform apply
 
-# Login to ECR
-aws ecr get-login-password --region $(aws configure get region) | \
-  docker login --username AWS --password-stdin $PRIVATE_REPO
-
-# Copy public image to your private repository
+# Follow the provided commands to push the image:
+aws ecr get-login-password | docker login --username AWS --password-stdin <ecr-registry-url>
 docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
-docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest "${PRIVATE_REPO}:latest"
-docker push "${PRIVATE_REPO}:latest"
+docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest "<repository-url>:latest"
+docker push <repository-url>:latest
+
+# Re-apply to create the Lambda function
+terraform apply
 ```
 
-### 3. Update Lambda Function
-
-After pushing the image, update the Lambda function to use the new image:
-
-```bash
-# Get the Lambda function name
-FUNCTION_NAME=$(terraform output -json analytics | jq -r .sqs_bridge_lambda.function_name)
-
-# Update function code
-aws lambda update-function-code \
-  --function-name $FUNCTION_NAME \
-  --image-uri $PRIVATE_REPO:latest
-```
+The module includes:
+- **Automatic ECR repository creation** with proper naming
+- **Image existence checking** to prevent incomplete deployments  
+- **Fail-fast behavior** with clear push instructions
+- **Automatic Lambda creation** once image is available
 
 **Note**: The single Firehose stream automatically delivers data to both S3 and OpenSearch when `enable_opensearch = true`.
+
+## Deployment Workflow
+
+The module uses a **fail-fast approach** for better UX:
+
+1. **First Apply**: Creates ECR repository and fails with push instructions
+2. **Push Image**: Follow the provided commands to push the SQS bridge image
+3. **Second Apply**: Creates Lambda function and completes the pipeline
+
+### Why Two-Step Apply?
+
+The two-step process is necessary because:
+
+- **ECR Repository Must Exist First**: The repository needs to be created before you can push an image to it
+- **Lambda Requires Valid Image URI**: Lambda functions with `package_type = "Image"` must reference an existing image
+- **Terraform Dependency Chain**: The Lambda resource depends on the image existing, but Terraform can't push Docker images natively
+- **Better Error Handling**: Instead of a cryptic Lambda deployment failure, you get clear instructions on what to do
+
+This ensures:
+- **No incomplete deployments** - Lambda won't be created without the image
+- **Clear error messages** - Exact commands provided for image push
+- **Automatic detection** - Module checks if image exists before proceeding
+- **Consistent naming** - ECR repository follows module naming conventions
 
 ## Configuration
 
@@ -144,18 +168,14 @@ data_sources = [
 ## Outputs
 
 - `sqs_bridge_ecr.repository_url` - Private ECR repository for the bridge image
-- `sqs_bridge_lambda.function_name` - Lambda function name
+- `sqs_bridge.function_name` - Lambda function name (when image exists)
+- `sqs_bridge.function_arn` - Lambda function ARN (when image exists)
 - `firehose_stream_name` - Main Kinesis Data Firehose stream name
 - `s3_bucket_name` - S3 bucket for analytics data and failed records
-- `opensearch_stream_name` - OpenSearch delivery stream name (when enabled)
+- `queue_url` - SQS queue URL for sending data
+- `queue_arn` - SQS queue ARN
 
-## Architecture
 
-```
-Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + OpenSearch
-                                              ↓
-                                        Transform Lambda (optional)
-```
 
 ### Components
 
@@ -172,7 +192,7 @@ Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + 
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
   
   context = module.label.context
   
@@ -181,13 +201,20 @@ module "analytics" {
     arn  = aws_sns_topic.events.arn
   }]
 }
+
+# After first apply, push the image:
+# aws ecr get-login-password | docker login --username AWS --password-stdin <registry>
+# docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
+# docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest <repo-url>:latest
+# docker push <repo-url>:latest
+# terraform apply  # Complete the deployment
 ```
 
 ### SNS Message Processing
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-firehose-analytics.git"
+  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
   
   context = module.label.context
   

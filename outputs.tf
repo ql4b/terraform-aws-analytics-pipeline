@@ -14,16 +14,12 @@ output "dlq_url" {
 }
 
 output "sqs_bridge" {
-  value = module.sqs_bridge_lambda
+  value = try (module.sqs_bridge_lambda[0], null) 
 }
 
 output "sqs_bridge_ecr" {
   value = module.sqs_bridge_ecr
 }
-
-# output "sqs_bridge_log_group" {
-#   value = data.aws_lambda_function.sqs_bridge_lambda.logging_config[0].log_group
-# }
 
 output "firehose_stream_name" {
   description = "Name of the Kinesis Data Firehose stream"
