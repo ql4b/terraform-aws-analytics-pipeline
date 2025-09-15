@@ -52,6 +52,16 @@ module "analytics" {
     type = "sns"
     arn  = aws_sns_topic.events.arn
   }]
+
+  providers = {
+    # Mandatory: always map aws.sns_source
+    # Same region → point to default provider
+    aws.sns_source = aws
+
+    # Cross region → point to a specific alias, e.g.:
+    # aws.sns_source = aws.virginia
+  }
+
 }
 ```
 
