@@ -5,10 +5,11 @@ exports.handler = async (event) => {
     for (const record of event.records) {
         try {
             const payload = Buffer.from(record.data, 'base64').toString('utf8');
-            const snsMessage = JSON.parse(payload);
-            
+            const snsMessage = JSON.parse(payload)
             // Parse the actual message content
-            const data = JSON.parse(snsMessage.Message);
+            const data = JSON.parse(decodeURIComponent(
+                snsMessage.Message)
+            );
             
             // Extract MessageAttributes
             const attributes = {};

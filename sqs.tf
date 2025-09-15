@@ -58,15 +58,23 @@ resource "aws_sqs_queue_policy" "main" {
 }
 
 # For data source with type == "sns" subscribe the queue to sns topic
+# NOTE: This resource always requires a provider alias `aws.sns_source`.
+# The root module must supply it via the `providers` map, either:
+#   aws.sns_source = aws           # same region (default)
+#   aws.sns_source = aws.<alias>   # cross-region (e.g., aws.virginia)
 resource "aws_sns_topic_subscription" "sqs" {
   for_each = {
     for idx, source in local.data_sources : idx => source
     if source.type == "sns"
   }
   
-  topic_arn = each.value.arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.main[0].arn
+  provider = aws.sns_source
+  
+  topic_arn             = each.value.arn
+  protocol              = "sqs"
+  endpoint              = aws_sqs_queue.main[0].arn
+  raw_message_delivery = false
+  
 }
 
 # API Gateway analytics should be handled at the application level

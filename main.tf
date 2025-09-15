@@ -18,7 +18,9 @@ locals {
   # opensearch
   enable_opensearch   = var.enable_opensearch
   opensearch_config   = var.opensearch_config
-  }
+}
+
+
 
 # Firehose delivery stream
 resource "aws_kinesis_firehose_delivery_stream" "main" {
