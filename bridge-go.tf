@@ -1,31 +1,39 @@
 # Clone and build Go Lambda function
-data "external" "sqs_bridge_build" {
-  program = ["bash", "-c", <<-EOF
-    set -e
-    BUILD_DIR="${path.module}/.sqs-bridge-build"
-    mkdir -p $BUILD_DIR
-    cd $BUILD_DIR
-    
-    if [ ! -d ".git" ]; then
-      git clone https://github.com/ql4b/sqs-firehose-bridge.git?ref=next .
-    else
-      git pull
-    fi
-    
-    make build
-    echo "{\"build_dir\":\"$BUILD_DIR\"}"
-  EOF
-  ]
+resource "null_resource" "sqs_bridge_build" {
+  triggers = {
+    config_hash = filemd5("${path.module}/bridge-go.tf")
+  }
+  
+  provisioner "local-exec" {
+    command = <<-EOF
+      set -e
+      BUILD_DIR="${path.module}/.sqs-bridge-build"
+      mkdir -p $BUILD_DIR
+      cd $BUILD_DIR
+      
+      if [ ! -d ".git" ]; then
+        git clone -b ${var.sqs_bridge_git_ref} https://github.com/ql4b/sqs-firehose-bridge.git .
+      else
+        git fetch && git checkout ${var.sqs_bridge_git_ref} && git pull
+      fi
+      
+      make build
+    EOF
+  }
+}
+
+locals {
+  sqs_bridge_build_dir = "${path.module}/.sqs-bridge-build"
 }
 
 module "sqs_bridge_lambda" {
-  depends_on = [data.external.sqs_bridge_build]
+  depends_on = [null_resource.sqs_bridge_build]
   
   source      = "git@github.com:ql4b/terraform-aws-lambda-function.git"
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  source_dir      = data.external.sqs_bridge_build.result.build_dir
+  source_dir      = local.sqs_bridge_build_dir
   runtime         = "provided.al2023"
   architecture    = "arm64"
   timeout         = 300
