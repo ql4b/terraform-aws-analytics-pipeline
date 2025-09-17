@@ -8,6 +8,8 @@ resource "null_resource" "sqs_bridge_build" {
     command = <<-EOF
       set -e
       BUILD_DIR="${path.module}/.sqs-bridge-build"
+      DEPLOY_DIR="${path.module}/.sqs-bridge-deploy"
+      
       mkdir -p $BUILD_DIR
       cd $BUILD_DIR
       
@@ -18,12 +20,17 @@ resource "null_resource" "sqs_bridge_build" {
       fi
       
       make build
+      
+      # Create clean deploy directory with just the binary
+      rm -rf $DEPLOY_DIR
+      mkdir -p $DEPLOY_DIR
+      cp bootstrap $DEPLOY_DIR/
     EOF
   }
 }
 
 locals {
-  sqs_bridge_build_dir = "${path.module}/.sqs-bridge-build"
+  sqs_bridge_deploy_dir = "${path.module}/.sqs-bridge-deploy"
 }
 
 module "sqs_bridge_lambda" {
@@ -33,8 +40,7 @@ module "sqs_bridge_lambda" {
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  filename        = "${local.sqs_bridge_build_dir}/lambda.zip"
-  source_dir      = null
+  source_dir      = local.sqs_bridge_deploy_dir
   runtime         = "provided.al2023"
   architecture    = "arm64"
   timeout         = 300
