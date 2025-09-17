@@ -30,17 +30,9 @@ variable "data_sources" {
   default = []
 }
 
-variable "sqs_bridge_image_uri" {
-  description = "URI of the sqs-bridge image (must be private ECR in same account)"
-  type        = string
-  default     = null
-}
-
-variable "sqs_bridge_command" {
-  description = "Command to run sqs-bridge"
-  type        = list(string)
-  default     = ["handler.run"]
-}
+# ECR bridge variables (deprecated - use v1.0.0-ecr tag)
+# variable "sqs_bridge_image_uri" - removed
+# variable "sqs_bridge_command" - removed
 
 variable "enable_transform" {
   description = "Enable Lambda data transformation"
@@ -113,8 +105,5 @@ variable "opensearch_config" {
   }
 }
 
-variable "sqs_bridge_public_image" {
-  type    = string
-  default = "public.ecr.aws/ql4b/sqs-firehose-bridge:latest" 
-}
+# variable "sqs_bridge_public_image" - removed
 
