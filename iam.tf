@@ -59,9 +59,8 @@ resource "aws_iam_role_policy" "firehose_policy" {
 }
 
 resource "aws_iam_role_policy" "lambda_policy" {
-  count   = local.sqs_bridge_image_exists ? 1 : 0
   name    = join("-", [module.this.id, "lambda-policy" ])
-  role    = module.sqs_bridge_lambda[0].execution_role_name
+  role    = module.sqs_bridge_lambda.execution_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"

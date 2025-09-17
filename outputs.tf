@@ -17,10 +17,6 @@ output "sqs_bridge" {
   value = try (module.sqs_bridge_lambda[0], null) 
 }
 
-output "sqs_bridge_ecr" {
-  value = module.sqs_bridge_ecr
-}
-
 output "firehose_stream_name" {
   description = "Name of the Kinesis Data Firehose stream"
   value       = aws_kinesis_firehose_delivery_stream.main.name
