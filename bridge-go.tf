@@ -47,7 +47,7 @@ locals {
 }
 
 module "sqs_bridge_lambda" {
-  depends_on = [null_resource.sqs_bridge_build]
+  depends_on = [local_file.sqs_bridge_zip]
   
   source      = "git@github.com:ql4b/terraform-aws-lambda-function.git"
   context     = module.this.context
@@ -62,6 +62,7 @@ module "sqs_bridge_lambda" {
 
   environment_variables = {
     FIREHOSE_STREAM_NAME = aws_kinesis_firehose_delivery_stream.main.name
+    BUILD_TRIGGER = null_resource.sqs_bridge_build.id  # Force update when build changes
   }
 }
 
