@@ -21,16 +21,14 @@ resource "null_resource" "sqs_bridge_build" {
       
       make build
       
-      # Create clean deploy directory with just the binary
-      rm -rf $DEPLOY_DIR
-      mkdir -p $DEPLOY_DIR
-      cp bootstrap $DEPLOY_DIR/
+      # Copy the pre-built zip to module directory
+      cp lambda.zip ${path.module}/sqs-bridge.zip
     EOF
   }
 }
 
 locals {
-  sqs_bridge_deploy_dir = "${path.module}/.sqs-bridge-deploy"
+  sqs_bridge_zip_path = "${path.module}/sqs-bridge.zip"
 }
 
 module "sqs_bridge_lambda" {
@@ -40,7 +38,8 @@ module "sqs_bridge_lambda" {
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  source_dir      = local.sqs_bridge_deploy_dir
+  filename        = local.sqs_bridge_zip_path
+  source_dir      = null
   runtime         = "provided.al2023"
   architecture    = "arm64"
   timeout         = 300
