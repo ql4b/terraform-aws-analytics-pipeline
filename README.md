@@ -17,7 +17,8 @@ Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + 
 
 ## Features
 
-- **SQS to Firehose Bridge** - Reliable message processing with batching
+- **Go-based SQS Bridge** - High-performance Lambda with `provided.al2023` runtime
+- **No ECR Dependency** - Automatic Git clone and build from source
 - **Optional Data Transformation** - Lambda-based field mapping and filtering
 - **Dual Destinations** - S3 storage + OpenSearch analytics in single stream
 - **SNS Integration** - Built-in support for SNS message unwrapping
@@ -65,54 +66,44 @@ module "analytics" {
 }
 ```
 
-### 2. Deploy SQS Bridge Image
+### 2. Deploy with Go Bridge
 
-The module automatically creates a private ECR repository for the SQS bridge image. On first `terraform apply`, it will fail with helpful instructions:
+The module automatically clones and builds the Go-based SQS bridge:
 
 ```bash
-# First apply creates ECR repository and fails with instructions
-terraform apply
-
-# Follow the provided commands to push the image:
-aws ecr get-login-password | docker login --username AWS --password-stdin <ecr-registry-url>
-docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
-docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest "<repository-url>:latest"
-docker push <repository-url>:latest
-
-# Re-apply to create the Lambda function
+# Single apply - no ECR setup needed
 terraform apply
 ```
 
 The module includes:
-- **Automatic ECR repository creation** with proper naming
-- **Image existence checking** to prevent incomplete deployments  
-- **Fail-fast behavior** with clear push instructions
-- **Automatic Lambda creation** once image is available
+- **Automatic Git clone** from `sqs-firehose-bridge` repository
+- **Go build process** with ARM64 optimization
+- **Configurable Git ref** for version control
+- **No Docker/ECR dependency** - pure Terraform workflow
 
 **Note**: The single Firehose stream automatically delivers data to both S3 and OpenSearch when `enable_opensearch = true`.
 
 ## Deployment Workflow
 
-The module uses a **fail-fast approach** for better UX:
+The module uses a **single-step deployment** with automatic build:
 
-1. **First Apply**: Creates ECR repository and fails with push instructions
-2. **Push Image**: Follow the provided commands to push the SQS bridge image
-3. **Second Apply**: Creates Lambda function and completes the pipeline
+1. **Single Apply**: Clones Go source, builds Lambda, and deploys complete pipeline
 
-### Why Two-Step Apply?
+### Go Bridge Build Process
 
-The two-step process is necessary because:
+The build process is fully automated:
 
-- **ECR Repository Must Exist First**: The repository needs to be created before you can push an image to it
-- **Lambda Requires Valid Image URI**: Lambda functions with `package_type = "Image"` must reference an existing image
-- **Terraform Dependency Chain**: The Lambda resource depends on the image existing, but Terraform can't push Docker images natively
-- **Better Error Handling**: Instead of a cryptic Lambda deployment failure, you get clear instructions on what to do
+- **Git Clone**: Automatically clones from `github.com/ql4b/sqs-firehose-bridge`
+- **Version Control**: Use `sqs_bridge_git_ref` to specify branch/tag
+- **ARM64 Build**: Optimized for Lambda ARM64 architecture
+- **Zip Packaging**: Creates minimal deployment package with only the binary
+- **Dependency Management**: No ECR, Docker, or manual image management
 
 This ensures:
-- **No incomplete deployments** - Lambda won't be created without the image
-- **Clear error messages** - Exact commands provided for image push
-- **Automatic detection** - Module checks if image exists before proceeding
-- **Consistent naming** - ECR repository follows module naming conventions
+- **Single command deployment** - Complete pipeline in one `terraform apply`
+- **Version pinning** - Control exact source version via Git ref
+- **Reproducible builds** - Same source always produces same binary
+- **Minimal overhead** - No container registry or image management
 
 ## Configuration
 
@@ -212,12 +203,26 @@ module "analytics" {
   }]
 }
 
-# After first apply, push the image:
-# aws ecr get-login-password | docker login --username AWS --password-stdin <registry>
-# docker pull public.ecr.aws/ql4b/sqs-firehose-bridge:latest
-# docker tag public.ecr.aws/ql4b/sqs-firehose-bridge:latest <repo-url>:latest
-# docker push <repo-url>:latest
-# terraform apply  # Complete the deployment
+# Single command deployment - no manual steps needed
+# terraform apply
+```
+
+### Version Control
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  
+  context = module.label.context
+  
+  # Pin to specific version
+  sqs_bridge_git_ref = "v1.2.0"  # or "main", "develop", etc.
+  
+  data_sources = [{
+    type = "sns"
+    arn  = aws_sns_topic.events.arn
+  }]
+}
 ```
 
 ### SNS Message Processing
