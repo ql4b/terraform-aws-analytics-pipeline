@@ -1,18 +1,5 @@
-# Create placeholder zip with minimal bootstrap
-data "archive_file" "sqs_bridge_placeholder" {
-  type        = "zip"
-  output_path = "${path.module}/sqs-bridge.zip"
-  
-  source {
-    content  = "#!/bin/bash\necho 'placeholder'"
-    filename = "bootstrap"
-  }
-}
-
 # Clone and build Go Lambda function
 resource "null_resource" "sqs_bridge_build" {
-  depends_on = [data.archive_file.sqs_bridge_placeholder]
-  
   triggers = {
     config_hash = filemd5("${path.module}/bridge-go.tf")
   }
@@ -33,14 +20,27 @@ resource "null_resource" "sqs_bridge_build" {
       
       make build
       
-      # Replace placeholder with actual zip (use absolute path)
-      cp lambda.zip "$(pwd)/../../sqs-bridge.zip"
+      # Copy built zip to module directory
+      TARGET_PATH="${path.module}/sqs-bridge.zip"
+      echo "Copying lambda.zip to $TARGET_PATH"
+      cp lambda.zip "$TARGET_PATH"
     EOF
   }
 }
 
+# Create the zip file after build completes
+resource "local_file" "sqs_bridge_zip" {
+  depends_on = [null_resource.sqs_bridge_build]
+  filename   = "${path.module}/sqs-bridge.zip"
+  content    = "built"
+  
+  lifecycle {
+    ignore_changes = [content]
+  }
+}
+
 locals {
-  sqs_bridge_zip_path = "${path.module}/sqs-bridge.zip"
+  sqs_bridge_zip_path = local_file.sqs_bridge_zip.filename
 }
 
 module "sqs_bridge_lambda" {
