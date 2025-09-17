@@ -22,6 +22,9 @@ resource "null_resource" "sqs_bridge_build" {
       
       # Copy built zip to module directory
       TARGET_PATH="${path.module}/sqs-bridge.zip"
+      TARGET_DIR="$(dirname "$TARGET_PATH")"
+      echo "Creating directory: $TARGET_DIR"
+      mkdir -p "$TARGET_DIR"
       echo "Copying lambda.zip to $TARGET_PATH"
       cp lambda.zip "$TARGET_PATH"
     EOF
