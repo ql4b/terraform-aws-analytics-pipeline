@@ -33,8 +33,8 @@ resource "null_resource" "sqs_bridge_build" {
       
       make build
       
-      # Replace placeholder with actual zip
-      cp lambda.zip ${path.module}/sqs-bridge.zip
+      # Replace placeholder with actual zip (use absolute path)
+      cp lambda.zip "$(pwd)/../../sqs-bridge.zip"
     EOF
   }
 }
