@@ -107,3 +107,8 @@ variable "opensearch_config" {
 
 # variable "sqs_bridge_public_image" - removed
 
+variable "sqs_bridge_git_ref" {
+  type        = string
+  description = "Git ref (branch/tag) for sqs-firehose-bridge repository"
+  default     = "main"
+}
