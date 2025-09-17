@@ -33,7 +33,8 @@ module "sqs_bridge_lambda" {
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  source_dir      = local.sqs_bridge_build_dir
+  filename        = "${local.sqs_bridge_build_dir}/lambda.zip"
+  source_dir      = null
   runtime         = "provided.al2023"
   architecture    = "arm64"
   timeout         = 300
