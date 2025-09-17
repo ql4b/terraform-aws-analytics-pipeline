@@ -168,9 +168,8 @@ data_sources = [
 
 ## Outputs
 
-- `sqs_bridge_ecr.repository_url` - Private ECR repository for the bridge image
-- `sqs_bridge.function_name` - Lambda function name (when image exists)
-- `sqs_bridge.function_arn` - Lambda function ARN (when image exists)
+- `sqs_bridge.function_name` - Lambda function name
+- `sqs_bridge.function_arn` - Lambda function ARN
 - `firehose_stream_name` - Main Kinesis Data Firehose stream name
 - `s3_bucket_name` - S3 bucket for analytics data and failed records
 - `queue_url` - SQS queue URL for sending data
