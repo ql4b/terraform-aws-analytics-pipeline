@@ -2,7 +2,7 @@
 # Replaced with Go-based bridge in bridge-go.tf# Clone and build Go Lambda function
 resource "null_resource" "sqs_bridge_build" {
   triggers = {
-    config_hash = filemd5("${path.module}/bridge-go.tf")
+    config_hash = filemd5("${path.module}/bridge.tf")
   }
   
   provisioner "local-exec" {
