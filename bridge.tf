@@ -32,6 +32,12 @@ resource "null_resource" "sqs_bridge_build" {
   }
 }
 
+data "local_file" "zip" {
+  depends_on = [null_resource.sqs_bridge_build]
+  filename = local.sqs_bridge_zip_path
+}
+
+
 locals {
   sqs_bridge_zip_path = "${path.module}/sqs-bridge.zip"
 }
@@ -43,7 +49,8 @@ module "sqs_bridge_lambda" {
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  filename        = local.sqs_bridge_zip_path
+  # filename        = local.sqs_bridge_zip_path
+  filename          = data.local_file.zip.filename
   source_dir      = null
   runtime         = "provided.al2023"
   architecture    = "arm64"
