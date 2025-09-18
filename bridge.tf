@@ -1,5 +1,4 @@
-# ECR-based bridge (deprecated - use v1.0.0-ecr tag for legacy support)
-# Replaced with Go-based bridge in bridge-go.tf# Clone and build Go Lambda function
+# Clone and build Go Lambda function
 resource "null_resource" "sqs_bridge_build" {
   triggers = {
     config_hash = filemd5("${path.module}/bridge.tf")
@@ -36,9 +35,20 @@ resource "null_resource" "sqs_bridge_build" {
   }
 }
 
-data "local_file" "zip" {
+# data "local_file" "zip" {
+#   depends_on = [null_resource.sqs_bridge_build]
+#   filename = local.sqs_bridge_zip_path
+# }
+
+resource "local_file" "zip_check" {
   depends_on = [null_resource.sqs_bridge_build]
-  filename = local.sqs_bridge_zip_path
+  
+  content  = "zip ready"
+  filename = "${path.module}/.zip-ready"
+  
+  provisioner "local-exec" {
+    command = "while [ ! -f ${local.sqs_bridge_zip_path} ]; do sleep 1; done"
+  }
 }
 
 locals {
@@ -46,14 +56,15 @@ locals {
 }
 
 module "sqs_bridge_lambda" {
-  depends_on = [null_resource.sqs_bridge_build]
+  # depends_on = [null_resource.sqs_bridge_build]
+  depends_on = [ local_file.zip_check ]
   
   source      = "git@github.com:ql4b/terraform-aws-lambda-function.git"
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 
-  # filename        = local.sqs_bridge_zip_path
-  filename          = data.local_file.zip.filename
+  filename        = local.sqs_bridge_zip_path
+  # filename          = data.local_file.zip.filename
   source_dir      = null
   runtime         = "provided.al2023"
   architecture    = "arm64"
