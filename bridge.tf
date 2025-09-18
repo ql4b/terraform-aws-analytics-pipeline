@@ -30,13 +30,16 @@ resource "null_resource" "sqs_bridge_build" {
       cp lambda.zip "$TARGET_PATH"
     EOF
   }
+
+  provisioner "local-exec" {
+    command = "test -f ${local.sqs_bridge_zip_path} || exit 1"
+  }
 }
 
 data "local_file" "zip" {
   depends_on = [null_resource.sqs_bridge_build]
   filename = local.sqs_bridge_zip_path
 }
-
 
 locals {
   sqs_bridge_zip_path = "${path.module}/sqs-bridge.zip"
