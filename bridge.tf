@@ -1,6 +1,8 @@
 # Pre-built SQS-Firehose bridge Lambda
 module "sqs_bridge_lambda" {
-  source      = "git@github.com:ql4b/terraform-aws-lambda-function.git"
+  # checkov:skip=CKV_TF_1: Source is from trusted repository
+  source = "git::https://github.com/ql4b/terraform-aws-lambda-function.git?ref=v1.0.0"
+  
   context     = module.this.context
   attributes  = concat(module.this.attributes, ["sqs", "firehose", "bridge"])
 

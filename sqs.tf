@@ -6,7 +6,7 @@ data "aws_caller_identity" "current" {}
 resource "aws_sqs_queue" "main" {
   count = local.create_queue ? 1 : 0
   name                       = join("-", [local.id, "pipeline"])
-  
+
   visibility_timeout_seconds = local.queue_config.visibility_timeout_seconds
   message_retention_seconds  = local.queue_config.message_retention_seconds
   
