@@ -32,7 +32,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
 
     compression_format = "GZIP"
     # prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
-    prefix               = var.prefix ? "raw-data/!{partitionKeyFromQuery:partitionKey}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/" : "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    prefix               = var.prefix
     error_output_prefix = "failed-data/"
 
     dynamic_partitioning_configuration {
