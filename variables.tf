@@ -107,3 +107,20 @@ variable "opensearch_config" {
 
 # variable "sqs_bridge_public_image" - removed
 
+variable "enable_dynamic_partitioning" {
+  description = "Enable dynamic partitioning in Firehose"
+  type        = bool
+  default     = false
+}
+
+variable "dynamic_partitioning_retry_duration_seconds" {
+  description = "Retry duration for dynamic partitioning (in seconds)"
+  type        = number
+  default     = 300
+}
+
+variable "prefix" {
+  description = "S3 prefix for Firehose delivery"
+  type        = string
+  default     = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"  
+}

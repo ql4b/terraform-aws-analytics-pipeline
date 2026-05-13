@@ -31,8 +31,14 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
     bucket_arn = aws_s3_bucket.data.arn
 
     compression_format = "GZIP"
-    prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    # prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    prefix               = var.prefix ? "raw-data/!{partitionKeyFromQuery:partitionKey}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/" : "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
     error_output_prefix = "failed-data/"
+
+    dynamic_partitioning_configuration {
+      enabled         = var.enable_dynamic_partitioning
+      retry_duration  = var.dynamic_partitioning_retry_duration_seconds  
+    }
 
     dynamic "processing_configuration" {
       for_each = local.enable_transform ? [1] : []
@@ -89,7 +95,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
       s3_backup_mode = "FailedDocumentsOnly"
       s3_configuration {
         role_arn   = aws_iam_role.firehose_opensearch[0].arn
-        bucket_arn = aws_s3_bucket.backup.arn
+        bucket_arn = aws_s3_bucket.data.arn
         prefix     = "opensearch-failed/"
         
         compression_format = "GZIP"

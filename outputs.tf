@@ -24,7 +24,7 @@ output "firehose_stream_name" {
 
 output "s3_bucket_name" {
   description = "Name of the S3 backup bucket"
-  value       = aws_s3_bucket.backup.bucket
+  value       = aws_s3_bucket.data.bucket
 }
 
 output "firehose_role_arn" {
