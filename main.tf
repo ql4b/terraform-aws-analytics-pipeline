@@ -28,7 +28,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
   extended_s3_configuration {
     file_extension    = ".json"
     role_arn   = aws_iam_role.firehose_role.arn
-    bucket_arn = aws_s3_bucket.backup.arn
+    bucket_arn = aws_s3_bucket.data.arn
 
     compression_format = "GZIP"
     prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
@@ -105,6 +105,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
 }
 
 # S3 bucket for failed records
-resource "aws_s3_bucket" "backup" {
-  bucket = join("-", [local.id, "backup"])
+resource "aws_s3_bucket" "data" {
+  # bucket = join("-", [local.id, "backup"])
+  bucket = "${local.id}-data"
 }

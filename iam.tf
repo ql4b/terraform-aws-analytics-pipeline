@@ -28,8 +28,8 @@ locals {
         "s3:PutObject"
       ]
       Resource = [
-        aws_s3_bucket.backup.arn,
-        "${aws_s3_bucket.backup.arn}/*"
+        aws_s3_bucket.data.arn,
+        "${aws_s3_bucket.data.arn}/*"
       ]
     },
     {
@@ -143,8 +143,8 @@ resource "aws_iam_role_policy" "firehose_opensearch" {
           "s3:PutObject"
         ]
         Resource = [
-          aws_s3_bucket.backup.arn,
-          "${aws_s3_bucket.backup.arn}/*"
+          aws_s3_bucket.data.arn,
+          "${aws_s3_bucket.data.arn}/*"
         ]
       },
       {
