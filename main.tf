@@ -35,6 +35,9 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
     prefix               = var.prefix
     error_output_prefix = "failed-data/"
 
+    buffering_size     = var.enable_dynamic_partitioning ? max(var.buffering_size, 64) : var.buffering_size
+    buffering_interval = var.buffering_interval
+
     dynamic_partitioning_configuration {
       enabled         = var.enable_dynamic_partitioning
       retry_duration  = var.dynamic_partitioning_retry_duration_seconds  

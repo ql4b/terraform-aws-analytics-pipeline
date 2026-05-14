@@ -125,6 +125,18 @@ variable "dynamic_partitioning_keys" {
   default     = null
 }
 
+variable "buffering_size" {
+  description = "Firehose buffer size in MB. Minimum 64 when dynamic partitioning is enabled."
+  type        = number
+  default     = 5
+}
+
+variable "buffering_interval" {
+  description = "Firehose buffer interval in seconds."
+  type        = number
+  default     = 300
+}
+
 variable "prefix" {
   description = "S3 prefix for Firehose delivery"
   type        = string
