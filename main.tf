@@ -41,14 +41,33 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
     }
 
     dynamic "processing_configuration" {
-      for_each = local.enable_transform ? [1] : []
+      for_each = local.enable_transform || var.dynamic_partitioning_keys != null ? [1] : []
       content {
         enabled = true
-        processors {
-          type = "Lambda"
-          parameters {
-            parameter_name  = "LambdaArn"
-            parameter_value = module.transform[0].function_arn
+
+        dynamic "processors" {
+          for_each = local.enable_transform ? [1] : []
+          content {
+            type = "Lambda"
+            parameters {
+              parameter_name  = "LambdaArn"
+              parameter_value = module.transform[0].function_arn
+            }
+          }
+        }
+
+        dynamic "processors" {
+          for_each = var.dynamic_partitioning_keys != null ? [1] : []
+          content {
+            type = "MetadataExtraction"
+            parameters {
+              parameter_name  = "MetadataExtractionQuery"
+              parameter_value = var.dynamic_partitioning_keys
+            }
+            parameters {
+              parameter_name  = "JsonParsingEngine"
+              parameter_value = "JQ-1.6"
+            }
           }
         }
       }

@@ -119,6 +119,12 @@ variable "dynamic_partitioning_retry_duration_seconds" {
   default     = 300
 }
 
+variable "dynamic_partitioning_keys" {
+  description = "JQ expression for dynamic partitioning metadata extraction (e.g. '{repo: .repo}')."
+  type        = string
+  default     = null
+}
+
 variable "prefix" {
   description = "S3 prefix for Firehose delivery"
   type        = string
