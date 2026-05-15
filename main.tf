@@ -26,7 +26,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
   destination   = local.enable_opensearch ? "opensearch" : "extended_s3"
 
   extended_s3_configuration {
-    file_extension    = ".json"
+    file_extension    = ".json.gz"
     role_arn   = aws_iam_role.firehose_role.arn
     bucket_arn = aws_s3_bucket.data.arn
 
