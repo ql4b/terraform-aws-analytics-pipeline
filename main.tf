@@ -73,6 +73,10 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
             }
           }
         }
+
+        processors {
+          type = "AppendDelimiterToRecord"
+        }
       }
     }
 
