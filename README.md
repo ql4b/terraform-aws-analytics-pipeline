@@ -20,6 +20,7 @@ Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + 
 - **Go-based SQS Bridge** - High-performance Lambda with `provided.al2023` runtime
 - **No ECR Dependency** - Automatic Git clone and build from source
 - **Optional Data Transformation** - Lambda-based field mapping and filtering
+- **Dynamic Partitioning** - Inline JQ metadata extraction for S3 prefix partitioning
 - **Dual Destinations** - S3 storage + OpenSearch analytics in single stream
 - **SNS Integration** - Built-in support for SNS message unwrapping
 - **Multi-source Support** - SNS (only SNS for now but will add more)
@@ -154,6 +155,38 @@ transform = {
 **Output:** `{"messageId": "...", "timestamp": "...", "order_id": "123", "user_email": "user@example.com"}`
 
 *Note: `amount` is excluded because it's not in fields or mappings.*
+
+### Dynamic Partitioning
+
+Use `dynamic_partitioning_keys` to extract partition keys from records using JQ expressions. This enables Firehose to route records into different S3 prefixes based on record content.
+
+```hcl
+module "analytics" {
+  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+
+  context = module.label.context
+
+  enable_dynamic_partitioning = true
+  dynamic_partitioning_keys   = "{repo: .repo}"
+  prefix                      = "raw-data/repo=!{partitionKeyFromQuery:repo}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+
+  data_sources = [{
+    type = "sns"
+    arn  = aws_sns_topic.events.arn
+  }]
+}
+```
+
+The JQ expression defines which fields become partition keys. The extracted keys are referenced in `prefix` via `!{partitionKeyFromQuery:<key>}`.
+
+Multiple keys:
+
+```hcl
+dynamic_partitioning_keys = "{source: .source, metric: .metric}"
+prefix                    = "raw-data/source=!{partitionKeyFromQuery:source}/metric=!{partitionKeyFromQuery:metric}/"
+```
+
+Can be combined with `enable_transform = true` — both Lambda and MetadataExtraction processors will be applied.
 
 ### Data Sources
 
@@ -312,7 +345,7 @@ MIT
 | [aws_iam_role_policy.lambda_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_kinesis_firehose_delivery_stream.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kinesis_firehose_delivery_stream) | resource |
 | [aws_lambda_event_source_mapping.sqs_bridge_trigger](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_event_source_mapping) | resource |
-| [aws_s3_bucket.backup](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
+| [aws_s3_bucket.data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_sns_topic_subscription.sqs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
 | [aws_sqs_queue.dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |

@@ -26,24 +26,56 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
   destination   = local.enable_opensearch ? "opensearch" : "extended_s3"
 
   extended_s3_configuration {
-    file_extension    = ".json"
+    file_extension    = ".json.gz"
     role_arn   = aws_iam_role.firehose_role.arn
-    bucket_arn = aws_s3_bucket.backup.arn
+    bucket_arn = aws_s3_bucket.data.arn
 
     compression_format = "GZIP"
-    prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    # prefix             = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    prefix               = var.prefix
     error_output_prefix = "failed-data/"
 
+    buffering_size     = var.enable_dynamic_partitioning ? max(var.buffering_size, 64) : var.buffering_size
+    buffering_interval = var.buffering_interval
+
+    dynamic_partitioning_configuration {
+      enabled         = var.enable_dynamic_partitioning
+      retry_duration  = var.dynamic_partitioning_retry_duration_seconds  
+    }
+
     dynamic "processing_configuration" {
-      for_each = local.enable_transform ? [1] : []
+      for_each = local.enable_transform || var.dynamic_partitioning_keys != null ? [1] : []
       content {
         enabled = true
-        processors {
-          type = "Lambda"
-          parameters {
-            parameter_name  = "LambdaArn"
-            parameter_value = module.transform[0].function_arn
+
+        dynamic "processors" {
+          for_each = local.enable_transform ? [1] : []
+          content {
+            type = "Lambda"
+            parameters {
+              parameter_name  = "LambdaArn"
+              parameter_value = module.transform[0].function_arn
+            }
           }
+        }
+
+        dynamic "processors" {
+          for_each = var.dynamic_partitioning_keys != null ? [1] : []
+          content {
+            type = "MetadataExtraction"
+            parameters {
+              parameter_name  = "MetadataExtractionQuery"
+              parameter_value = var.dynamic_partitioning_keys
+            }
+            parameters {
+              parameter_name  = "JsonParsingEngine"
+              parameter_value = "JQ-1.6"
+            }
+          }
+        }
+
+        processors {
+          type = "AppendDelimiterToRecord"
         }
       }
     }
@@ -89,7 +121,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
       s3_backup_mode = "FailedDocumentsOnly"
       s3_configuration {
         role_arn   = aws_iam_role.firehose_opensearch[0].arn
-        bucket_arn = aws_s3_bucket.backup.arn
+        bucket_arn = aws_s3_bucket.data.arn
         prefix     = "opensearch-failed/"
         
         compression_format = "GZIP"
@@ -105,6 +137,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
 }
 
 # S3 bucket for failed records
-resource "aws_s3_bucket" "backup" {
-  bucket = join("-", [local.id, "backup"])
+resource "aws_s3_bucket" "data" {
+  # bucket = join("-", [local.id, "backup"])
+  bucket = "${local.id}-data"
 }
