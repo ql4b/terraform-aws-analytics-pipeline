@@ -24,6 +24,7 @@ locals {
 resource "aws_kinesis_firehose_delivery_stream" "main" {
   name          = join("-", [local.id, "firehose"])
   destination   = local.enable_opensearch ? "opensearch" : "extended_s3"
+  tags          = module.this.tags
 
   extended_s3_configuration {
     file_extension    = ".json.gz"
@@ -140,4 +141,5 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
 resource "aws_s3_bucket" "data" {
   # bucket = join("-", [local.id, "backup"])
   bucket = "${local.id}-data"
+  tags   = module.this.tags
 }

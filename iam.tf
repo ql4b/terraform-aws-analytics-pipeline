@@ -1,5 +1,6 @@
 resource "aws_iam_role" "firehose_role" {
   name = join("-", [module.this.id, "firehose-role" ])
+  tags = module.this.tags
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -90,6 +91,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
 resource "aws_iam_role" "firehose_opensearch" {
   count = var.enable_opensearch ? 1 : 0
   name  = join("-", [local.id, "firehose", "opensearch", "role"])
+  tags  = module.this.tags
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
