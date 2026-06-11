@@ -4,7 +4,7 @@
 
 Terraform module that creates a complete analytics pipeline: SQS → Lambda Bridge → Kinesis Data Firehose → S3 + OpenSearch, with optional Lambda data transformation.
 
-![analytics-pipeline](./doc/analytics-pipeline.jpg)
+![analytics-pipeline](./doc/analytics-pipeline-v2.jpg)
 
 
 ## Architecture
