@@ -32,7 +32,8 @@ Data Sources → SQS Queue → Lambda Bridge → Kinesis Data Firehose → S3 + 
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  source  = "ql4b/analytics-pipeline/aws"
+  version = "~> 1.0"
   
   context    = module.label.context
   attributes = ["analytics"]
@@ -162,7 +163,8 @@ Use `dynamic_partitioning_keys` to extract partition keys from records using JQ 
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  source  = "ql4b/analytics-pipeline/aws"
+  version = "~> 1.0"
 
   context = module.label.context
 
@@ -225,7 +227,8 @@ data_sources = [
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  source  = "ql4b/analytics-pipeline/aws"
+  version = "~> 1.0"
   
   context = module.label.context
   
@@ -243,7 +246,8 @@ module "analytics" {
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  source  = "ql4b/analytics-pipeline/aws"
+  version = "~> 1.0"
   
   context = module.label.context
   
@@ -261,7 +265,8 @@ module "analytics" {
 
 ```hcl
 module "analytics" {
-  source = "git::https://github.com/ql4b/terraform-aws-analytics-pipeline.git"
+  source  = "ql4b/analytics-pipeline/aws"
+  version = "~> 1.0"
   
   context = module.label.context
   
@@ -325,9 +330,9 @@ MIT
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_sqs_bridge_lambda"></a> [sqs\_bridge\_lambda](#module\_sqs\_bridge\_lambda) | git::https://github.com/ql4b/terraform-aws-lambda-function.git | v1.0.0 |
+| <a name="module_sqs_bridge_lambda"></a> [sqs\_bridge\_lambda](#module\_sqs\_bridge\_lambda) | ql4b/lambda-function/aws | ~> 1.0 |
 | <a name="module_this"></a> [this](#module\_this) | cloudposse/label/null | 0.25.0 |
-| <a name="module_transform"></a> [transform](#module\_transform) | git::https://github.com/ql4b/terraform-aws-lambda-function.git | v1.0.0 |
+| <a name="module_transform"></a> [transform](#module\_transform) | ql4b/lambda-function/aws | ~> 1.0 |
 
 ## Resources
 
@@ -360,11 +365,16 @@ MIT
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_additional_tag_map"></a> [additional\_tag\_map](#input\_additional\_tag\_map) | Additional key-value pairs to add to each map in `tags_as_list_of_maps`. Not added to `tags` or `id`.<br/>This is for some rare cases where resources want additional configuration of tags<br/>and therefore take a list of maps with tag key, value, and additional configuration. | `map(string)` | `{}` | no |
 | <a name="input_attributes"></a> [attributes](#input\_attributes) | ID element. Additional attributes (e.g. `workers` or `cluster`) to add to `id`,<br/>in the order they appear in the list. New attributes are appended to the<br/>end of the list. The elements of the list are joined by the `delimiter`<br/>and treated as a single ID element. | `list(string)` | `[]` | no |
+| <a name="input_buffering_interval"></a> [buffering\_interval](#input\_buffering\_interval) | Firehose buffer interval in seconds. | `number` | `300` | no |
+| <a name="input_buffering_size"></a> [buffering\_size](#input\_buffering\_size) | Firehose buffer size in MB. Minimum 64 when dynamic partitioning is enabled. | `number` | `5` | no |
 | <a name="input_context"></a> [context](#input\_context) | Single object for setting entire context at once.<br/>See description of individual variables for details.<br/>Leave string and numeric variables as `null` to use default value.<br/>Individual variable settings (non-null) override settings in context object,<br/>except for attributes, tags, and additional\_tag\_map, which are merged. | `any` | <pre>{<br/>  "additional_tag_map": {},<br/>  "attributes": [],<br/>  "delimiter": null,<br/>  "descriptor_formats": {},<br/>  "enabled": true,<br/>  "environment": null,<br/>  "id_length_limit": null,<br/>  "label_key_case": null,<br/>  "label_order": [],<br/>  "label_value_case": null,<br/>  "labels_as_tags": [<br/>    "unset"<br/>  ],<br/>  "name": null,<br/>  "namespace": null,<br/>  "regex_replace_chars": null,<br/>  "stage": null,<br/>  "tags": {},<br/>  "tenant": null<br/>}</pre> | no |
 | <a name="input_create_queue"></a> [create\_queue](#input\_create\_queue) | Whether to create SQS queue (true) or use existing (false) | `bool` | `true` | no |
 | <a name="input_data_sources"></a> [data\_sources](#input\_data\_sources) | Data sources that will send to this pipeline | <pre>list(object({<br/>    type = string  # "sns", "eventbridge", "lambda"<br/>    arn  = string<br/>  }))</pre> | `[]` | no |
 | <a name="input_delimiter"></a> [delimiter](#input\_delimiter) | Delimiter to be used between ID elements.<br/>Defaults to `-` (hyphen). Set to `""` to use no delimiter at all. | `string` | `null` | no |
 | <a name="input_descriptor_formats"></a> [descriptor\_formats](#input\_descriptor\_formats) | Describe additional descriptors to be output in the `descriptors` output map.<br/>Map of maps. Keys are names of descriptors. Values are maps of the form<br/>`{<br/>   format = string<br/>   labels = list(string)<br/>}`<br/>(Type is `any` so the map values can later be enhanced to provide additional options.)<br/>`format` is a Terraform format string to be passed to the `format()` function.<br/>`labels` is a list of labels, in order, to pass to `format()` function.<br/>Label values will be normalized before being passed to `format()` so they will be<br/>identical to how they appear in `id`.<br/>Default is `{}` (`descriptors` output will be empty). | `any` | `{}` | no |
+| <a name="input_dynamic_partitioning_keys"></a> [dynamic\_partitioning\_keys](#input\_dynamic\_partitioning\_keys) | JQ expression for dynamic partitioning metadata extraction (e.g. '{repo: .repo}'). | `string` | `null` | no |
+| <a name="input_dynamic_partitioning_retry_duration_seconds"></a> [dynamic\_partitioning\_retry\_duration\_seconds](#input\_dynamic\_partitioning\_retry\_duration\_seconds) | Retry duration for dynamic partitioning (in seconds) | `number` | `300` | no |
+| <a name="input_enable_dynamic_partitioning"></a> [enable\_dynamic\_partitioning](#input\_enable\_dynamic\_partitioning) | Enable dynamic partitioning in Firehose | `bool` | `false` | no |
 | <a name="input_enable_opensearch"></a> [enable\_opensearch](#input\_enable\_opensearch) | Enable OpenSearch destination | `bool` | `false` | no |
 | <a name="input_enable_transform"></a> [enable\_transform](#input\_enable\_transform) | Enable Lambda data transformation | `bool` | `false` | no |
 | <a name="input_enabled"></a> [enabled](#input\_enabled) | Set to false to prevent the module from creating any resources | `bool` | `null` | no |
@@ -378,6 +388,7 @@ MIT
 | <a name="input_name"></a> [name](#input\_name) | ID element. Usually the component or solution name, e.g. 'app' or 'jenkins'.<br/>This is the only ID element not also included as a `tag`.<br/>The "name" tag is set to the full `id` string. There is no tag with the value of the `name` input. | `string` | `null` | no |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | ID element. Usually an abbreviation of your organization name, e.g. 'eg' or 'cp', to help ensure generated IDs are globally unique | `string` | `null` | no |
 | <a name="input_opensearch_config"></a> [opensearch\_config](#input\_opensearch\_config) | OpenSearch configuration | <pre>object({<br/>    domain_arn            = string<br/>    index_name            = optional(string, "analytics")<br/>    index_rotation_period = optional(string, "OneMonth") <br/>    buffering_size        = optional(number, 5)<br/>    buffering_interval    = optional(number, 60)<br/>  })</pre> | <pre>{<br/>  "domain_arn": "-"<br/>}</pre> | no |
+| <a name="input_prefix"></a> [prefix](#input\_prefix) | S3 prefix for Firehose delivery | `string` | `"raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"` | no |
 | <a name="input_queue_config"></a> [queue\_config](#input\_queue\_config) | SQS queue configuration | <pre>object({<br/>    visibility_timeout_seconds = optional(number, 300)<br/>    message_retention_seconds  = optional(number, 1209600)  # 14 days<br/>    max_receive_count          = optional(number, 3)<br/>    batch_size                 = optional(number, 10)<br/>  })</pre> | `{}` | no |
 | <a name="input_regex_replace_chars"></a> [regex\_replace\_chars](#input\_regex\_replace\_chars) | Terraform regular expression (regex) string.<br/>Characters matching the regex will be removed from the ID elements.<br/>If not set, `"/[^a-zA-Z0-9-]/"` is used to remove all characters other than hyphens, letters and digits. | `string` | `null` | no |
 | <a name="input_stage"></a> [stage](#input\_stage) | ID element. Usually used to indicate role, e.g. 'prod', 'staging', 'source', 'build', 'test', 'deploy', 'release' | `string` | `null` | no |

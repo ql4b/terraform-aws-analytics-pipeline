@@ -12,8 +12,8 @@ resource "local_file" "transform_js" {
 # Transform Lambda using terraform-aws-lambda-function module
 module "transform" {
   count     = local.enable_transform ? 1 : 0
-  # checkov:skip=CKV_TF_1: Source is from trusted repository
-  source      = "git::https://github.com/ql4b/terraform-aws-lambda-function.git?ref=v1.0.0"
+  source  = "ql4b/lambda-function/aws"
+  version = "~> 1.0"
   
   source_dir = "/tmp/${module.this.id}-transform-src"
   
