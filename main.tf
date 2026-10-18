@@ -18,6 +18,14 @@ locals {
   # opensearch
   enable_opensearch   = var.enable_opensearch
   opensearch_config   = var.opensearch_config
+
+  # Static directory root of var.prefix: everything up to the last "/" before
+  # the first Firehose/partition token ("!{..}"). For the default prefix this is
+  # "raw-data/". Scopes the lifecycle rule to this module's own delivered data,
+  # not a consumer's prefixes in the same bucket. Falls back to the whole prefix
+  # if it has no "/" before a token.
+  _prefix_static   = regex("^[^!]*", var.prefix)
+  data_prefix_root = strcontains(local._prefix_static, "/") ? regex("^.*/", local._prefix_static) : local._prefix_static
 }
 
 # Firehose delivery stream
@@ -142,4 +150,36 @@ resource "aws_s3_bucket" "data" {
   # bucket = join("-", [local.id, "backup"])
   bucket = "${local.id}-data"
   tags   = module.this.tags
+}
+
+# Lifecycle: expire the pipeline's own delivered objects. Default 365 days.
+# Scoped to the prefixes this module writes (Firehose delivery root + failed-data/),
+# NOT the whole bucket, so a consumer writing its own prefixes (e.g. Athena query
+# results) keeps control of its own retention. Set data_expiration_days = null
+# to disable.
+resource "aws_s3_bucket_lifecycle_configuration" "data" {
+  count  = var.data_expiration_days == null ? 0 : 1
+  bucket = aws_s3_bucket.data.id
+
+  rule {
+    id     = "expire-delivered-data"
+    status = "Enabled"
+    filter {
+      prefix = local.data_prefix_root
+    }
+    expiration {
+      days = var.data_expiration_days
+    }
+  }
+
+  rule {
+    id     = "expire-failed-data"
+    status = "Enabled"
+    filter {
+      prefix = "failed-data/"
+    }
+    expiration {
+      days = var.data_expiration_days
+    }
+  }
 }

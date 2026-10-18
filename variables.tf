@@ -142,3 +142,9 @@ variable "prefix" {
   type        = string
   default     = "raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"  
 }
+
+variable "data_expiration_days" {
+  description = "Days after which this pipeline's delivered objects (the Firehose prefix root and failed-data/) expire. Scoped to the prefixes this module writes, not the whole bucket, so a consumer writing other prefixes (e.g. Athena results) keeps its own retention. Set to null to disable the lifecycle rule."
+  type        = number
+  default     = 365
+}
